@@ -1,0 +1,6 @@
+*.secret
+*.key
+*.pem
+.env
+values-*.secret.yaml
+.DS_Store

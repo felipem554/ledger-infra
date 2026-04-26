@@ -35,7 +35,7 @@ jobs:
             --namespace ledger-prod \
             --create-namespace \
             --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
-            --set image.tag=${{ github.sha }} \
+            --set image.tag=${{ steps.version.outputs.VERSION }} \
             --set replicaCount=3 \
             --set hpa.minReplicas=3 \
             --atomic \

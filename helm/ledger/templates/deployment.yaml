@@ -25,17 +25,22 @@ spec:
             - name: {{ $k }}
               value: "{{ $v }}"
             {{- end }}
+          {{- if .Values.secretEnv }}
+          envFrom:
+            - secretRef:
+                name: {{ include "ledger.fullname" . }}
+          {{- end }}
           readinessProbe:
             httpGet:
               path: /readyz
               port: {{ .Values.service.targetPort }}
-            initialDelaySeconds: 5
-            periodSeconds: 5
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
           livenessProbe:
             httpGet:
               path: /healthz
               port: {{ .Values.service.targetPort }}
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

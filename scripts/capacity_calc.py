@@ -8,6 +8,10 @@ def main():
     args = p.parse_args()
 
     T, E = args.tps, args.entries
+    if T <= 0:
+        p.error("--tps must be a positive number")
+    if E <= 0:
+        p.error("--entries must be a positive number")
     row_ops = T * (3 + 2*E)
 
     partitions = max(128, int(math.ceil(T / 50.0)))

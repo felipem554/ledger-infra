@@ -66,11 +66,14 @@ services:
       - |
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic ledger.transactions.v1 --partitions 128 --replication-factor 1 &&
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic ledger.outbox.dlq.v1 --partitions 12 --replication-factor 1 &&
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic ledger.commands.transactions.v1 --partitions 32 --replication-factor 1 &&
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic ledger.commands.dlq.v1 --partitions 12 --replication-factor 1 &&
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic ledger.commands.results.v1 --partitions 32 --replication-factor 1 &&
         echo 'Kafka topics created.'
 
-  ledger-api:
+  ledger-service:
     build:
-      context: ../ledger-api
+      context: ../ledger-service
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
@@ -80,6 +83,7 @@ services:
       POSTGRES_PASSWORD: ledger
       MONGO_URI: mongodb://mongo:27017/ledger
       KAFKA_BOOTSTRAP: kafka:9092
+      COMMAND_INGEST_ENABLED: "true"
       LOG_LEVEL: INFO
     depends_on:
       postgres:
@@ -104,7 +108,7 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     depends_on:
-      - ledger-api
+      - ledger-service
       - grafana
 
   grafana:

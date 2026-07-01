@@ -1,5 +1,6 @@
 image:
-  repository: ledger-api
+  # Built and published by the ledger-service (app) repo; this repo only deploys it.
+  repository: ghcr.io/felipem554/ledger-service
   tag: "latest"
   pullPolicy: IfNotPresent
 

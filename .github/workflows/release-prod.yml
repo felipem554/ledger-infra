@@ -11,7 +11,8 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/ledger-api
+  # The image is published by the ledger-service (app) repo, not this one.
+  IMAGE_NAME: felipem554/ledger-service
 
 jobs:
   deploy-production:

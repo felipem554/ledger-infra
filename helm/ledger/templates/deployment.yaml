@@ -15,7 +15,7 @@ spec:
         app.kubernetes.io/name: {{ include "ledger.name" . }}
     spec:
       containers:
-        - name: ledger-api
+        - name: ledger-service
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:

@@ -1,17 +1,20 @@
+# Local dev stack for the ledger platform: the ledger-service API, its backing
+# stores, and monitoring. The API is consumed as a published image from the
+# ledger-service repo; override LEDGER_SERVICE_IMAGE in .env to test a local tag.
 name: ledger-dev
 services:
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_USER: ledger
-      POSTGRES_PASSWORD: ledger
-      POSTGRES_DB: ledger
+      POSTGRES_USER: ${POSTGRES_USER:-ledger}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ledger}
+      POSTGRES_DB: ${POSTGRES_DB:-ledger}
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ledger -d ledger"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ledger} -d ${POSTGRES_DB:-ledger}"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -44,7 +47,6 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
-      KAFKA_NUM_PARTITIONS: 128
       KAFKA_DEFAULT_REPLICATION_FACTOR: 1
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       CLUSTER_ID: "ledger-dev-cluster-00001"
@@ -72,19 +74,17 @@ services:
         echo 'Kafka topics created.'
 
   ledger-service:
-    build:
-      context: ../ledger-service
-      dockerfile: Dockerfile
+    image: ${LEDGER_SERVICE_IMAGE:-ghcr.io/felipem554/ledger-service:latest}
     ports:
       - "8080:8080"
     environment:
-      POSTGRES_URL: jdbc:postgresql://postgres:5432/ledger
-      POSTGRES_USER: ledger
-      POSTGRES_PASSWORD: ledger
+      POSTGRES_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-ledger}
+      POSTGRES_USER: ${POSTGRES_USER:-ledger}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ledger}
       MONGO_URI: mongodb://mongo:27017/ledger
       KAFKA_BOOTSTRAP: kafka:9092
-      COMMAND_INGEST_ENABLED: "true"
-      LOG_LEVEL: INFO
+      COMMAND_INGEST_ENABLED: ${COMMAND_INGEST_ENABLED:-true}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
     depends_on:
       postgres:
         condition: service_healthy
@@ -95,33 +95,34 @@ services:
       kafka-init:
         condition: service_completed_successfully
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/healthz || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/healthz || exit 1"]
       interval: 10s
       timeout: 5s
       start_period: 30s
       retries: 10
 
   prometheus:
-    image: prom/prometheus:v2.52.0
+    image: prom/prometheus:v2.54.1
     ports:
       - "9090:9090"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     depends_on:
       - ledger-service
-      - grafana
 
   grafana:
-    image: grafana/grafana:10.4.2
+    image: grafana/grafana:11.2.0
     ports:
       - "3000:3000"
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:-admin}
+    depends_on:
+      - prometheus
     volumes:
       - grafanadata:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning
-      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
 
 volumes:
   pgdata:

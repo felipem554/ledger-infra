@@ -4,3 +4,14 @@
 .env
 values-*.secret.yaml
 .DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Local clone of the application repo (lives at github.com/felipem554/ledger-service)
+ledger-service/

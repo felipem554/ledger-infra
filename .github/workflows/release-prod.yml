@@ -1,5 +1,9 @@
 name: Release to Production
 
+# Deploys a tagged release of the ledger-service image (published to GHCR by the
+# ledger-service repo's CI). This repo owns the chart and the kube credentials;
+# the app repo owns build/publish. See ledger-service docs/ci-architecture.md.
+
 on:
   push:
     tags:
@@ -7,12 +11,9 @@ on:
 
 permissions:
   contents: read
-  packages: read
 
 env:
-  REGISTRY: ghcr.io
-  # The image is published by the ledger-service (app) repo, not this one.
-  IMAGE_NAME: felipem554/ledger-service
+  IMAGE: ghcr.io/felipem554/ledger-service
 
 jobs:
   deploy-production:
@@ -32,13 +33,14 @@ jobs:
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
       - name: Deploy with Helm
         run: |
-          helm upgrade --install ledger-api helm/ledger \
+          helm upgrade --install ledger helm/ledger \
             --namespace ledger-prod \
             --create-namespace \
-            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
+            -f helm/ledger/values.yaml \
+            -f helm/ledger/values-prod.yaml \
+            --set image.repository=${{ env.IMAGE }} \
             --set image.tag=${{ steps.version.outputs.VERSION }} \
-            --set replicaCount=3 \
-            --set hpa.minReplicas=3 \
+            --set secretEnv.POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD_PROD }} \
             --atomic \
             --timeout 10m \
             --wait

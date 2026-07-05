@@ -9,6 +9,25 @@ jobs:
       - uses: actions/checkout@v4
       - uses: azure/setup-helm@v4
       - run: helm lint helm/ledger
+      # Render each environment overlay — catches template/values errors that
+      # `helm lint` alone misses.
+      - name: Render staging manifests
+        run: |
+          helm template ledger helm/ledger \
+            -f helm/ledger/values.yaml -f helm/ledger/values-staging.yaml \
+            --set secretEnv.POSTGRES_PASSWORD=dummy > /dev/null
+      - name: Render production manifests
+        run: |
+          helm template ledger helm/ledger \
+            -f helm/ledger/values.yaml -f helm/ledger/values-prod.yaml \
+            --set secretEnv.POSTGRES_PASSWORD=dummy > /dev/null
+
+  compose-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate docker-compose
+        run: docker compose -f docker/docker-compose.yml config --quiet
 
   python-check:
     runs-on: ubuntu-latest

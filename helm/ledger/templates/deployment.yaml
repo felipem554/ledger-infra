@@ -13,6 +13,11 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: {{ include "ledger.name" . }}
+      {{- if .Values.secretEnv }}
+      annotations:
+        # Roll pods when the secret's contents change (envFrom alone doesn't).
+        checksum/secret: {{ toYaml .Values.secretEnv | sha256sum }}
+      {{- end }}
     spec:
       containers:
         - name: ledger-service
